@@ -40,7 +40,7 @@ public class ClientWorker implements Runnable {
 			long total;
 			int read;
 
-			Log.i("connecting to target " + head.getUri());
+			Log.i("connecting to server " + head.getUri());
 			URL url = new URL(head.getUri());
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod(head.getMethod().toUpperCase());
@@ -57,7 +57,7 @@ public class ClientWorker implements Runnable {
 				String name = i.next();
 				String value = head.getHeaders().get(name);
 				conn.setRequestProperty(name, value);
-				Log.i("\t(*) wrote header " + name + " = " + value);
+				Log.i("\tp -> s " + name + ": " + value);
 			}
 			
 			// content
@@ -73,12 +73,12 @@ public class ClientWorker implements Runnable {
 				}
 				out.flush();
 				end = System.currentTimeMillis();
-				Log.i("(*) wrote " + total + " bytes in " + (end - start) + " milliseconds");
+				Log.i("\tc -> p -> s " + total + " bytes in " + (end - start) + " milliseconds");
 			}
 			
 			// status
 			int status = conn.getResponseCode();
-			Log.i("target responded with status " + status);
+			Log.i("server responded with status " + status);
 			
 			// response headers
 			Map<String, List<String>> responseHeaders = conn.getHeaderFields();
@@ -86,11 +86,11 @@ public class ClientWorker implements Runnable {
 				String name = i.next();
 				String value = formatValues(responseHeaders.get(name));
 				if (name == null) {
-					Log.i("\t(*) found status line " + value);
 					socket.getOutputStream().write((value + "\n").getBytes("UTF-8"));
+					Log.i("\ts -> p -> c " + value);
 				} else {
-					Log.i("\t(*) found header " + name + " = " + value);
 					socket.getOutputStream().write((name + ": " + value + "\n").getBytes("UTF-8"));
+					Log.i("\ts -> p -> c " + name + ": " + value);
 				}
 			}
 			socket.getOutputStream().write("\n".getBytes("UTF-8"));
@@ -107,7 +107,7 @@ public class ClientWorker implements Runnable {
 			}
 			out.flush();
 			end = System.currentTimeMillis();
-			Log.i("\t(*) found " + total + " bytes in " + (end - start) + " milliseconds");
+			Log.i("\ts -> p -> c " + total + " bytes in " + (end - start) + " milliseconds");
 			
 			conn.disconnect();
 			

@@ -36,11 +36,9 @@ public class HttpHead {
 				StringTokenizer st = new StringTokenizer(line, " ");
 				if (st.countTokens() == 3) {
 					head.method = URLDecoder.decode(st.nextToken(), "UTF-8");
-					Log.i("\tfound method " + head.method);
 					head.uri = URLDecoder.decode(st.nextToken(), "UTF-8");
-					Log.i("\tfound uri " + head.uri);
 					head.version = URLDecoder.decode(st.nextToken(), "UTF-8");
-					Log.i("\tfound version " + head.version);
+					Log.i("\tc -> p " + line);
 				}
 			} else {
 				int index = line.indexOf(":");
@@ -48,7 +46,7 @@ public class HttpHead {
 					String name = line.substring(0, index).trim();
 					String value = line.substring(index + 1).trim();
 					head.headers.put(name, value);
-					Log.i("\tfound header " + name + " = " + value);
+					Log.i("\tc -> p " + name + ": " + value);
 				}
 			}
 			lineNumber++;
