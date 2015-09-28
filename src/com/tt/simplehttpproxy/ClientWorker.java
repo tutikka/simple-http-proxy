@@ -6,10 +6,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class ClientWorker implements Runnable {
@@ -24,13 +21,8 @@ public class ClientWorker implements Runnable {
 	@Override
 	public void run() {
 		
-		HttpHead head;
-		try {
-			head = HttpHead.parse(socket.getInputStream());
-		} catch (Exception e) {
-			Log.e("error parsing request head", e);
-			return;
-		}
+		HttpRequestHead requestHead;
+		HttpResponseHead responseHead;
 		
 		try {
 			BufferedInputStream in = null;
@@ -41,27 +33,31 @@ public class ClientWorker implements Runnable {
 			long total;
 			int read;
 
-			Log.i("connecting to server " + head.getUri());
-			URL url = new URL(head.getUri());
+			// parse request head
+			requestHead = HttpRequestHead.parse(socket.getInputStream());
+			
+			// create connection to server
+			Log.i("connecting to server " + requestHead.getUri());
+			URL url = new URL(requestHead.getUri());
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-			conn.setRequestMethod(head.getMethod().toUpperCase());
+			conn.setRequestMethod(requestHead.getMethod().toUpperCase());
 			conn.setDoInput(true);
-			if ("PUT".equalsIgnoreCase(head.getMethod()) || "POST".equalsIgnoreCase(head.getMethod())) {
+			if ("PUT".equalsIgnoreCase(requestHead.getMethod()) || "POST".equalsIgnoreCase(requestHead.getMethod())) {
 				conn.setDoOutput(true);
 			} else {
 				conn.setDoOutput(false);
 			}
 			
-			// request headers
-			Set<String> requestHeaders = head.getHeaders().keySet();
+			// send request headers to server
+			Set<String> requestHeaders = requestHead.getHeaders().keySet();
 			for (Iterator<String> i = requestHeaders.iterator(); i.hasNext(); ) {
 				String name = i.next();
-				String value = head.getHeaders().get(name);
+				String value = requestHead.getHeaders().get(name);
 				conn.setRequestProperty(name, value);
 				Log.i("\tp -> s " + name + ": " + value);
 			}
 			
-			// content
+			// send content to server
 			if (conn.getDoOutput()) {
 				start = System.currentTimeMillis();
 				in = new BufferedInputStream(socket.getInputStream());
@@ -74,29 +70,28 @@ public class ClientWorker implements Runnable {
 				}
 				out.flush();
 				end = System.currentTimeMillis();
-				Log.i("\tc -> p -> s " + total + " bytes in " + (end - start) + " milliseconds");
+				Log.i("\tc -> s " + total + " bytes in " + (end - start) + " milliseconds");
 			}
 			
-			// status
+			// get status from server
 			int status = conn.getResponseCode();
 			Log.i("server responded with status " + status);
 			
-			// response headers
-			Map<String, List<String>> responseHeaders = conn.getHeaderFields();
-			for (Iterator<String> i = responseHeaders.keySet().iterator(); i.hasNext(); ) {
+			// get response headers from server
+			responseHead = HttpResponseHead.parse(conn.getHeaderFields());
+
+			// send response headers to client
+			socket.getOutputStream().write((responseHead.getVersion() + " " + responseHead.getStatus() + " " + responseHead.getMessage() + "\n").getBytes("UTF-8"));
+			Set<String> responseHeaders = responseHead.getHeaders().keySet();
+			for (Iterator<String> i = responseHeaders.iterator(); i.hasNext(); ) {
 				String name = i.next();
-				String value = formatValues(responseHeaders.get(name));
-				if (name == null) {
-					socket.getOutputStream().write((value + "\n").getBytes("UTF-8"));
-					Log.i("\ts -> p -> c " + value);
-				} else {
-					socket.getOutputStream().write((name + ": " + value + "\n").getBytes("UTF-8"));
-					Log.i("\ts -> p -> c " + name + ": " + value);
-				}
+				String value = responseHead.getHeaders().get(name);
+				socket.getOutputStream().write((name + ": " + value + "\n").getBytes("UTF-8"));
+				Log.i("\tp -> c " + name + ": " + value);
 			}
 			socket.getOutputStream().write("\n".getBytes("UTF-8"));
 			
-			// content
+			// send content to client
 			start = System.currentTimeMillis();
 			in = new BufferedInputStream(conn.getInputStream());
 			out = new BufferedOutputStream(socket.getOutputStream());
@@ -108,8 +103,9 @@ public class ClientWorker implements Runnable {
 			}
 			out.flush();
 			end = System.currentTimeMillis();
-			Log.i("\ts -> p -> c " + total + " bytes in " + (end - start) + " milliseconds");
+			Log.i("\ts -> c " + total + " bytes in " + (end - start) + " milliseconds");
 			
+			// disconnect
 			conn.disconnect();
 			
 		} catch (Exception e) {
@@ -119,19 +115,6 @@ public class ClientWorker implements Runnable {
 			close();
 		}
 	}
-
-	private String formatValues(List<String> values) {
-		StringBuilder sb = new StringBuilder();
-		int index = 0;
-		for (String value : values) {
-			if (index > 0) {
-				sb.append(",");
-			}
-			sb.append(value);
-			index++;
-		}
-		return (sb.toString());
-	}
 	
 	private void close() {
 		try {
@@ -139,7 +122,7 @@ public class ClientWorker implements Runnable {
 				socket.close();
 			}
 		} catch (IOException e) {
-			Log.e("error closing client connection", e);
+			Log.e("error closing client", e);
 		}
 	}
 	
