@@ -1,118 +1,57 @@
 package com.tt.simplehttpproxy;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.Iterator;
+import java.net.ServerSocket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class HttpServer implements Runnable {
 
-	private ServerSocketChannel serverSocketChannel;
+	private int port = 9999;
 	
-	private Selector selector;
+	private int maxParallelClients = 1;
 	
-	public HttpServer() {
-		try {
-			selector = Selector.open();
-			serverSocketChannel = ServerSocketChannel.open();
-			serverSocketChannel.configureBlocking(false);
-			serverSocketChannel.bind(new InetSocketAddress("127.0.0.1", 9999));
-			serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-			Log.i("server initilialized");
-		} catch (IOException e) {
-			Log.e("error initializing server", e);
-		}
+	private ServerSocket serverSocket;
+	
+	private ExecutorService executorService;
+	
+	public HttpServer() throws Exception {
+		init();
+	}
+	
+	public HttpServer(int port, int maxParallelClients) throws Exception {
+		this.port = port;
+		this.maxParallelClients = maxParallelClients;
+		init();
+	}
+	
+	private void init() throws Exception {
+		executorService = Executors.newFixedThreadPool(maxParallelClients);
+		serverSocket = new ServerSocket(port);
 	}
 	
 	@Override
 	public void run() {
 		try {
-			Log.i("server is accepting connections");
+			Log.i("waiting for connections on port " + port + "...");
 			while (!Thread.currentThread().isInterrupted()) {
-				selector.select(10 * 1000);
-				Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
-				while (keys.hasNext()) {
-					SelectionKey selectionKey = keys.next();
-					keys.remove();
-					if (!selectionKey.isValid()) {
-						continue;
-					}
-					if (selectionKey.isAcceptable()) {
-						accept(selectionKey);
-					}
-					if (selectionKey.isWritable()) {
-						write(selectionKey);
-					}
-					if (selectionKey.isReadable()) {
-						read(selectionKey);
-					}
-				}
+				executorService.submit(new ClientWorker(serverSocket.accept()));
 			}
 		} catch (IOException e) {
-			Log.e("error looping through keys", e);
+			Log.e("error waiting for connections", e);
 		} finally {
 			close();
 		}
 	}
-
-    private void accept(SelectionKey key) throws IOException{
-    	Log.i("accept");
-        ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
-        SocketChannel socketChannel = serverSocketChannel.accept();
-        socketChannel.configureBlocking(false);
-        socketChannel.register(selector, SelectionKey.OP_WRITE);
-    }
 	
-    private void write(SelectionKey key) throws IOException{
-    	Log.i("write");
-        SocketChannel channel = (SocketChannel) key.channel();
-        channel.write(ByteBuffer.wrap("HTTP/1.1 200 OK\nContent-Length: 0".getBytes()));
-        key.interestOps(SelectionKey.OP_READ);
-    }
-    
-    private void read(SelectionKey key) throws IOException{
-    	Log.i("read");
-        SocketChannel channel = (SocketChannel) key.channel();
-        ByteBuffer readBuffer = ByteBuffer.allocate(1024);
-        readBuffer.clear();
-        int read;
-        try {
-            read = channel.read(readBuffer);
-        } catch (IOException e) {
-            System.out.println("Reading problem, closing connection");
-            key.cancel();
-            channel.close();
-            return;
-        }
-        if (read == -1){
-            System.out.println("Nothing was there to be read, closing connection");
-            channel.close();
-            key.cancel();
-            return;
-        }
-        readBuffer.flip();
-        byte[] data = new byte[1000];
-        readBuffer.get(data, 0, read);
-        System.out.println("Received: "+new String(data));
- 
-        key.interestOps(SelectionKey.OP_WRITE);
-    }
-    
-    private void close(){
-        if (selector != null){
-            try {
-                selector.close();
-                serverSocketChannel.socket().close();
-                serverSocketChannel.close();
-                Log.i("server closed");
-            } catch (IOException e) {
-                Log.e("error closing server", e);
-            }
-        }
-    }
+	private void close() {
+		try {
+			if (serverSocket != null) {
+				serverSocket.close();
+			}
+		} catch (IOException e) {
+			Log.e("error closing server", e);
+		}
+	}
 	
 }

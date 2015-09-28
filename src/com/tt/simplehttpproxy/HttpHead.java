@@ -1,7 +1,14 @@
 package com.tt.simplehttpproxy;
 
-import java.nio.ByteBuffer;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 public class HttpHead {
 
@@ -13,14 +20,66 @@ public class HttpHead {
 	
 	private Map<String, String> headers;
 	
-	public HttpHead parse(ByteBuffer data) throws Exception {
+	public static HttpHead parse(InputStream in) throws Exception {
+		if (in == null) {
+			throw new Exception("input stream is null");
+		}
 		HttpHead head = new HttpHead();
+		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		String line;
+		int lineNumber = 1;
+		while ((line = br.readLine()) != null) {
+			if (line.isEmpty()) {
+				break;
+			}
+			if (lineNumber == 1) {
+				StringTokenizer st = new StringTokenizer(line, " ");
+				if (st.countTokens() == 3) {
+					head.method = URLDecoder.decode(st.nextToken(), "UTF-8");
+					Log.i("\tfound method " + head.method);
+					head.uri = URLDecoder.decode(st.nextToken(), "UTF-8");
+					Log.i("\tfound uri " + head.uri);
+					head.version = URLDecoder.decode(st.nextToken(), "UTF-8");
+					Log.i("\tfound version " + head.version);
+				}
+			} else {
+				int index = line.indexOf(":");
+				if (index > 0) {
+					String name = line.substring(0, index).trim();
+					String value = line.substring(index + 1).trim();
+					head.headers.put(name, value);
+					Log.i("\tfound header " + name + " = " + value);
+				}
+			}
+			lineNumber++;
+		}
+		if (head.method == null) {
+			throw new Exception("did not find method");
+		}
+		if (head.uri == null) {
+			throw new Exception("did not find uri");
+		}
+		if (head.version == null) {
+			throw new Exception("did not find version");
+		}
 		return (head);
 	}
 	
 	public HttpHead() {
+		this.headers = new HashMap<>();
 	}
 
+	public String getHeaderValue(String name) {
+		Set<String> keys = headers.keySet();
+		for (Iterator<String> i = keys.iterator(); i.hasNext(); ) {
+			String key = i.next();
+			if (name.toLowerCase().equals(key.toLowerCase())) {
+				return (headers.get(key));
+			}
+		}
+		return (null);
+	}
+	
 	public String getMethod() {
 		return method;
 	}
