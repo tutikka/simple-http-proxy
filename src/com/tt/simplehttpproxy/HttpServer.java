@@ -2,6 +2,8 @@ package com.tt.simplehttpproxy;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -15,6 +17,8 @@ public class HttpServer implements Runnable {
 	
 	private ExecutorService executorService;
 	
+	private Set<TransactionListener> listeners;
+	
 	public HttpServer() throws Exception {
 		init();
 	}
@@ -25,9 +29,20 @@ public class HttpServer implements Runnable {
 		init();
 	}
 	
+	public void addTransactionListener(TransactionListener listener) {
+		listeners.add(listener);
+	}
+	
+	public void removeTransactionListener(TransactionListener listener) {
+		if (listeners.contains(listener)) {
+			listeners.remove(listener);
+		}
+	}
+	
 	private void init() throws Exception {
 		executorService = Executors.newFixedThreadPool(maxParallelClients);
 		serverSocket = new ServerSocket(port);
+		listeners = new HashSet<>();
 	}
 	
 	@Override
@@ -35,7 +50,7 @@ public class HttpServer implements Runnable {
 		try {
 			Log.i("waiting for connections on port " + port + "...");
 			while (!Thread.currentThread().isInterrupted()) {
-				executorService.submit(new ClientWorker(serverSocket.accept()));
+				executorService.submit(new ClientWorker(serverSocket.accept(), listeners));
 			}
 		} catch (IOException e) {
 			Log.e("error waiting for connections", e);

@@ -13,10 +13,13 @@ public class ClientWorker implements Runnable {
 
 	private Socket socket;
 	
+	private Set<TransactionListener> listeners;
+	
 	private String id;
 	
-	public ClientWorker(Socket socket) {
+	public ClientWorker(Socket socket, Set<TransactionListener> listeners) {
 		this.socket = socket;
+		this.listeners = listeners;
 		this.id = "" + Thread.currentThread().getId();
 		Log.i(id, "new connection from " + socket.getInetAddress().getHostAddress());
 	}
@@ -35,7 +38,10 @@ public class ClientWorker implements Runnable {
 			long end;
 			long total;
 			int read;
-
+			
+			// transaction start
+			long txStart = System.currentTimeMillis();
+			
 			// parse request head
 			requestHead = HttpRequestHead.parse(id, socket.getInputStream());
 			
@@ -110,6 +116,23 @@ public class ClientWorker implements Runnable {
 			
 			// disconnect
 			conn.disconnect();
+			
+			// transaction end
+			long txEnd = System.currentTimeMillis();
+			
+			// transaction
+			Transaction transaction = new Transaction();
+			transaction.setSource(socket.getInetAddress().getHostAddress());
+			transaction.setDestination(requestHead.getUri());
+			transaction.setMethod(requestHead.getMethod());
+			transaction.setStatus(status);
+			transaction.setLength(total);
+			transaction.setTime(txEnd - txStart);
+			if (listeners != null) {
+				for (TransactionListener listener : listeners) {
+					listener.onTransaction(transaction);
+				}
+			}
 			
 		} catch (Exception e) {
 			Log.e(id, "error handling client connection", e);
