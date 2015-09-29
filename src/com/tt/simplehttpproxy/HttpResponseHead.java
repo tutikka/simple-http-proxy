@@ -24,7 +24,7 @@ public class HttpResponseHead extends HttpHead {
 		return (sb.toString());
 	}
 	
-	public static HttpResponseHead parse(Map<String, List<String>> in) throws Exception {
+	public static HttpResponseHead parse(String id, Map<String, List<String>> in) throws Exception {
 		if (in == null) {
 			throw new Exception("input is null");
 		}
@@ -48,11 +48,11 @@ public class HttpResponseHead extends HttpHead {
 					if (sb.length() > 0) {
 						head.message = sb.toString();
 					}
-					Log.i("\ts -> p " + value);
+					Log.i(id, "s -> p " + value);
 				}
 			} else {
 				head.headers.put(name, value);
-				Log.i("\ts -> p " + name + ": " + value);
+				Log.i(id, "s -> p " + name + ": " + value);
 			}
 		}
 		if (head.version == null) {

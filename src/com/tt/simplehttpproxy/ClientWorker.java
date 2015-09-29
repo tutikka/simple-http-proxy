@@ -13,9 +13,12 @@ public class ClientWorker implements Runnable {
 
 	private Socket socket;
 	
+	private String id;
+	
 	public ClientWorker(Socket socket) {
 		this.socket = socket;
-		Log.i("new connection from " + socket.getInetAddress().getHostAddress());
+		this.id = "" + Thread.currentThread().getId();
+		Log.i(id, "new connection from " + socket.getInetAddress().getHostAddress());
 	}
 	
 	@Override
@@ -34,10 +37,10 @@ public class ClientWorker implements Runnable {
 			int read;
 
 			// parse request head
-			requestHead = HttpRequestHead.parse(socket.getInputStream());
+			requestHead = HttpRequestHead.parse(id, socket.getInputStream());
 			
 			// create connection to server
-			Log.i("connecting to server " + requestHead.getUri());
+			Log.i(id, "connecting to server " + requestHead.getUri());
 			URL url = new URL(requestHead.getUri());
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod(requestHead.getMethod().toUpperCase());
@@ -54,7 +57,7 @@ public class ClientWorker implements Runnable {
 				String name = i.next();
 				String value = requestHead.getHeaders().get(name);
 				conn.setRequestProperty(name, value);
-				Log.i("\tp -> s " + name + ": " + value);
+				Log.i(id, "p -> s " + name + ": " + value);
 			}
 			
 			// send content to server
@@ -70,15 +73,15 @@ public class ClientWorker implements Runnable {
 				}
 				out.flush();
 				end = System.currentTimeMillis();
-				Log.i("\tc -> s " + total + " bytes in " + (end - start) + " milliseconds");
+				Log.i(id, "c -> s " + total + " bytes in " + (end - start) + " milliseconds");
 			}
 			
 			// get status from server
 			int status = conn.getResponseCode();
-			Log.i("server responded with status " + status);
+			Log.i(id, "server responded with status " + status);
 			
 			// get response headers from server
-			responseHead = HttpResponseHead.parse(conn.getHeaderFields());
+			responseHead = HttpResponseHead.parse(id, conn.getHeaderFields());
 
 			// send response headers to client
 			socket.getOutputStream().write((responseHead.getVersion() + " " + responseHead.getStatus() + " " + responseHead.getMessage() + "\n").getBytes("UTF-8"));
@@ -87,7 +90,7 @@ public class ClientWorker implements Runnable {
 				String name = i.next();
 				String value = responseHead.getHeaders().get(name);
 				socket.getOutputStream().write((name + ": " + value + "\n").getBytes("UTF-8"));
-				Log.i("\tp -> c " + name + ": " + value);
+				Log.i(id, "p -> c " + name + ": " + value);
 			}
 			socket.getOutputStream().write("\n".getBytes("UTF-8"));
 			
@@ -103,13 +106,13 @@ public class ClientWorker implements Runnable {
 			}
 			out.flush();
 			end = System.currentTimeMillis();
-			Log.i("\ts -> c " + total + " bytes in " + (end - start) + " milliseconds");
+			Log.i(id, "s -> c " + total + " bytes in " + (end - start) + " milliseconds");
 			
 			// disconnect
 			conn.disconnect();
 			
 		} catch (Exception e) {
-			Log.e("error handling client connection", e);
+			Log.e(id, "error handling client connection", e);
 			e.printStackTrace(System.err);
 		} finally {
 			close();
@@ -122,7 +125,7 @@ public class ClientWorker implements Runnable {
 				socket.close();
 			}
 		} catch (IOException e) {
-			Log.e("error closing client", e);
+			Log.e(id, "error closing client", e);
 		}
 	}
 	

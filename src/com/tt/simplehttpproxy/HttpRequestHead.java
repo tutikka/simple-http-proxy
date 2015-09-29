@@ -12,7 +12,7 @@ public class HttpRequestHead extends HttpHead {
 	
 	private String uri;
 
-	public static HttpRequestHead parse(InputStream in) throws Exception {
+	public static HttpRequestHead parse(String id, InputStream in) throws Exception {
 		if (in == null) {
 			throw new Exception("input is null");
 		}
@@ -30,7 +30,7 @@ public class HttpRequestHead extends HttpHead {
 					head.method = URLDecoder.decode(st.nextToken(), "UTF-8");
 					head.uri = URLDecoder.decode(st.nextToken(), "UTF-8");
 					head.version = URLDecoder.decode(st.nextToken(), "UTF-8");
-					Log.i("\tc -> p " + line);
+					Log.i(id, "c -> p " + line);
 				}
 			} else {
 				int index = line.indexOf(":");
@@ -38,7 +38,7 @@ public class HttpRequestHead extends HttpHead {
 					String name = line.substring(0, index).trim();
 					String value = line.substring(index + 1).trim();
 					head.headers.put(name, value);
-					Log.i("\tc -> p " + name + ": " + value);
+					Log.i(id, "c -> p " + name + ": " + value);
 				}
 			}
 			lineNumber++;
