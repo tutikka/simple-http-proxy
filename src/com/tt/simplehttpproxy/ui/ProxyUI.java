@@ -1,6 +1,8 @@
 package com.tt.simplehttpproxy.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -10,6 +12,9 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 import com.tt.simplehttpproxy.HttpServer;
 import com.tt.simplehttpproxy.Transaction;
@@ -18,9 +23,9 @@ import com.tt.simplehttpproxy.TransactionListener;
 @SuppressWarnings("serial")
 public class ProxyUI extends JFrame implements ActionListener, TransactionListener {
 
-	private static final int WIDTH = 1024;
+	private static final int WIDTH = 800;
 	
-	private static final int HEIGHT = 768;
+	private static final int HEIGHT = 600;
 	
 	private TransactionTableModel tableModel = new TransactionTableModel();
 	
@@ -28,8 +33,11 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	
 	private ProxyUI() {
 		setTitle("Simple HTTP Proxy");
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setSize(WIDTH, HEIGHT);
-		setLayout(new BorderLayout());
+		Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+		setLocation(dimension.width / 2 - WIDTH / 2, dimension.height / 2 - HEIGHT / 2);
+		setLayout(new BorderLayout(10, 10));
 		initMenu();
 		initTable();
 		setVisible(true);
@@ -71,18 +79,36 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 		try {
 			server = new HttpServer(9999, 1);
 			server.addTransactionListener(this);
-			server.run();
+			server.start();
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 		}
 	}
 	
 	private void stopServer() {
-		
+		try {
+			if (server != null && server.isAlive()) {
+				server.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace(System.err);
+		}
 	}
 	
 	public static void main(String[] args) {
-		new ProxyUI();
+		System.setProperty("apple.laf.useScreenMenuBar", "true");
+		Runnable ui = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+				} catch (Exception e) {
+					e.printStackTrace(System.err);
+				}
+				new ProxyUI();
+			}
+		};
+		SwingUtilities.invokeLater(ui);
 	}
 
 	@Override
@@ -102,6 +128,7 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 			tableModel.clear();
 		}
 		if ("exit".equals(e.getActionCommand())) {
+			stopServer();
 			dispose();
 		}
 	}

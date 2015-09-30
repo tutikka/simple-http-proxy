@@ -2,12 +2,13 @@ package com.tt.simplehttpproxy;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class HttpServer implements Runnable {
+public class HttpServer extends Thread {
 
 	private int port = 9999;
 	
@@ -49,23 +50,27 @@ public class HttpServer implements Runnable {
 	public void run() {
 		try {
 			Log.i("waiting for connections on port " + port + "...");
-			while (!Thread.currentThread().isInterrupted()) {
+			while (true) {
 				executorService.submit(new ClientWorker(serverSocket.accept(), listeners));
 			}
+		} catch (SocketException e) {
+			Log.e("socket exception when waiting for connections", e);
 		} catch (IOException e) {
-			Log.e("error waiting for connections", e);
+			Log.e("io exception when waiting for connections", e);
 		} finally {
 			close();
+			executorService.shutdown();
 		}
 	}
 	
-	private void close() {
+	public void close() {
 		try {
 			if (serverSocket != null) {
 				serverSocket.close();
+				serverSocket = null;
 			}
 		} catch (IOException e) {
-			Log.e("error closing server", e);
+			Log.e("io exception when closing server", e);
 		}
 	}
 	

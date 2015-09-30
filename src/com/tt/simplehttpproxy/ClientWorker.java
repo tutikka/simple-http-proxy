@@ -135,8 +135,7 @@ public class ClientWorker implements Runnable {
 			}
 			
 		} catch (Exception e) {
-			Log.e(id, "error handling client connection", e);
-			e.printStackTrace(System.err);
+			Log.e(id, "exception when handling client connection", e);
 		} finally {
 			close();
 		}
@@ -148,7 +147,7 @@ public class ClientWorker implements Runnable {
 				socket.close();
 			}
 		} catch (IOException e) {
-			Log.e(id, "error closing client", e);
+			Log.e(id, "io exception when closing client", e);
 		}
 	}
 	
