@@ -27,9 +27,9 @@ public class HttpRequestHead extends HttpHead {
 			if (lineNumber == 1) {
 				StringTokenizer st = new StringTokenizer(line, " ");
 				if (st.countTokens() == 3) {
-					head.method = URLDecoder.decode(st.nextToken(), "UTF-8");
+					head.method = st.nextToken();
 					head.uri = URLDecoder.decode(st.nextToken(), "UTF-8");
-					head.version = URLDecoder.decode(st.nextToken(), "UTF-8");
+					head.version = st.nextToken();
 					Log.i(id, "c -> p " + line);
 				}
 			} else {

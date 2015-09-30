@@ -2,16 +2,20 @@ package com.tt.simplehttpproxy.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
@@ -31,28 +35,36 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	
 	private HttpServer server;
 	
+	private JMenuItem start;
+	
+	private JMenuItem stop;
+	
+	private JLabel status;
+	
 	private ProxyUI() {
 		setTitle("Simple HTTP Proxy");
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setSize(WIDTH, HEIGHT);
 		Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dimension.width / 2 - WIDTH / 2, dimension.height / 2 - HEIGHT / 2);
-		setLayout(new BorderLayout(10, 10));
+		setLayout(new BorderLayout());
 		initMenu();
 		initTable();
+		initFooter();
 		setVisible(true);
 	}
 	
 	private void initMenu() {
 		JMenuBar menuBar = new JMenuBar();
 		JMenu file = new JMenu("File");
-		JMenuItem start = new JMenuItem("Start");
+		start = new JMenuItem("Start proxy server");
 		start.setActionCommand("start");
 		start.addActionListener(this);
-		JMenuItem stop = new JMenuItem("Stop");
+		stop = new JMenuItem("Stop proxy server");
+		stop.setEnabled(false);
 		stop.setActionCommand("stop");
 		stop.addActionListener(this);
-		JMenuItem clear = new JMenuItem("Clear");
+		JMenuItem clear = new JMenuItem("Clear history");
 		clear.setActionCommand("clear");
 		clear.addActionListener(this);
 		JMenuItem exit = new JMenuItem("Exit");
@@ -70,16 +82,29 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	
 	private void initTable() {
 		JTable table = new JTable(tableModel);
+		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		table.setAutoCreateRowSorter(true);
 		table.setFillsViewportHeight(true);
 		JScrollPane jsp = new JScrollPane(table);
 		add(jsp, BorderLayout.CENTER);
 	}
 	
+	private void initFooter() {
+		JPanel panel = new JPanel();
+		panel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		status = new JLabel("Server: stopped");
+		panel.add(status);
+		add(panel, BorderLayout.SOUTH);
+	}
+	
 	private void startServer() {
 		try {
-			server = new HttpServer(9999, 1);
+			server = new HttpServer(9999, 10);
 			server.addTransactionListener(this);
 			server.start();
+			start.setEnabled(false);
+			stop.setEnabled(true);
+			status.setText("Server: running");
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 		}
@@ -90,6 +115,9 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 			if (server != null && server.isAlive()) {
 				server.close();
 			}
+			start.setEnabled(true);
+			stop.setEnabled(false);
+			status.setText("Server: stopped");
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 		}

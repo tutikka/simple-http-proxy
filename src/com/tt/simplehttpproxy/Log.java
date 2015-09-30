@@ -36,7 +36,11 @@ public class Log {
 			sb.append(formatId(id));
 		}
 		sb.append(message);
-		System.out.println(sb.toString());
+		System.err.println(sb.toString());
+		if (exception != null) {
+			System.err.println(exception.getMessage());
+			exception.printStackTrace(System.err);
+		}
 	}
 	
 	public static void e(String message, Exception exception) {
@@ -52,7 +56,11 @@ public class Log {
 			sb.append(formatId(id));
 		}
 		sb.append(message);
-		System.out.println(sb.toString());
+		System.err.println(sb.toString());
+		if (exception != null) {
+			System.err.println(exception.getMessage());
+			exception.printStackTrace(System.err);
+		}
 	}
 	
 	private static String formatId(String id) {

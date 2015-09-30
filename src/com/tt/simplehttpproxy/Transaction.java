@@ -10,6 +10,8 @@ public class Transaction {
 	
 	private int status;
 	
+	private String contentType;
+	
 	private long length;
 	
 	private long time;
@@ -47,6 +49,14 @@ public class Transaction {
 
 	public void setStatus(int status) {
 		this.status = status;
+	}
+
+	public String getContentType() {
+		return contentType;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
 	}
 
 	public long getLength() {
