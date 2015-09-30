@@ -64,6 +64,10 @@ public class HttpResponseHead extends HttpHead {
 		return (head);
 	}
 	
+	public boolean isChunkedEncoding() {
+		return ("chunked".equalsIgnoreCase(getHeaderValue("Transfer-Encoding")));
+	}
+	
 	public int getStatus() {
 		return status;
 	}
