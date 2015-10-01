@@ -93,14 +93,18 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	
 	private JComponent createContent() {
 		JTable table = new JTable(tableModel);
+		table.setBorder(BorderFactory.createEmptyBorder());
 		table.setDefaultRenderer(Integer.class, new TransactionTableCellRenderer());
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.addMouseListener(this);
 		table.setAutoCreateRowSorter(true);
 		table.setFillsViewportHeight(true);
 		JScrollPane jsp = new JScrollPane(table);
-		jsp.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		return (jsp);
+		JPanel panel = new JPanel();
+		panel.setLayout(new GridLayout(1, 1));
+		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		panel.add(jsp);
+		return (panel);
 	}
 	
 	private JComponent createFooter() {

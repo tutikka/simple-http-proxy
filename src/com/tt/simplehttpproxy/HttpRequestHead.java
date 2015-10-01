@@ -16,6 +16,10 @@ public class HttpRequestHead extends HttpHead {
 
 	private List<Parameter> parameters = new ArrayList<>();
 	
+    private static boolean isHeadTerminated(String line) {
+        return (line == null || line.isEmpty());
+    }
+	
 	public static HttpRequestHead parse(String id, InputStream in) throws Exception {
 		if (in == null) {
 			throw new Exception("input is null");
@@ -24,10 +28,7 @@ public class HttpRequestHead extends HttpHead {
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		String line;
 		int lineNumber = 1;
-		while ((line = br.readLine()) != null) {
-			if (line.isEmpty()) {
-				break;
-			}
+		while (!isHeadTerminated(line = br.readLine())) {
 			if (lineNumber == 1) {
 				StringTokenizer st = new StringTokenizer(line, " ");
 				if (st.countTokens() == 3) {

@@ -48,7 +48,6 @@ public class ClientWorker implements Runnable {
 			int read;
 			// parse request head
 			requestHead = HttpRequestHead.parse(id, socket.getInputStream());
-			// create connection to server
 			Log.i(id, "connecting to destination " + requestHead.getUri());
 			URL url = new URL(requestHead.getUri().replace(" ", "%20"));
 			conn = (HttpURLConnection) url.openConnection();
@@ -71,7 +70,22 @@ public class ClientWorker implements Runnable {
 			// send content to server
 			if (conn.getDoOutput()) {
 				start = System.currentTimeMillis();
+				File file = new File("/tmp", "cache.input." + id);
 				in = new BufferedInputStream(socket.getInputStream());
+				out = new BufferedOutputStream(new FileOutputStream(file));
+				buffer = new byte[32 * 1024];
+				total = 0;
+				while ((read = in.read(buffer)) != -1) {
+					out.write(buffer, 0, read);
+					total += read;
+				}
+				out.flush();
+				out.close();
+				in.close();
+				end = System.currentTimeMillis();
+				Log.i(id, "Source -> Proxy " + total + " bytes in " + (end - start) + " milliseconds");
+				start = System.currentTimeMillis();
+				in = new BufferedInputStream(new FileInputStream(file));
 				out = new BufferedOutputStream(conn.getOutputStream());
 				buffer = new byte[32 * 1024];
 				total = 0;
@@ -83,7 +97,7 @@ public class ClientWorker implements Runnable {
 				out.close();
 				in.close();
 				end = System.currentTimeMillis();
-				Log.i(id, "Source -> Destination " + total + " bytes in " + (end - start) + " milliseconds");
+				Log.i(id, "Proxy -> Destination " + total + " bytes in " + (end - start) + " milliseconds");
 			}
 			// get status from server
 			int status = conn.getResponseCode();
@@ -92,7 +106,6 @@ public class ClientWorker implements Runnable {
 			responseHead = HttpResponseHead.parse(id, conn.getHeaderFields());
 			// send response headers to client
 			socket.getOutputStream().write((responseHead.getVersion() + " " + responseHead.getStatus() + " " + responseHead.getMessage() + "\r\n").getBytes("UTF-8"));
-			
 			for (Header header : responseHead.getHeaders()) {
 				String name = header.getName();
 				String value = header.getValue();
@@ -106,7 +119,7 @@ public class ClientWorker implements Runnable {
 			}
 			// send content to client
 			start = System.currentTimeMillis();
-			File file = new File("/tmp", "cache." + id);
+			File file = new File("/tmp", "cache.output." + id);
 			in = new BufferedInputStream(conn.getInputStream());
 			out = new BufferedOutputStream(new FileOutputStream(file));
 			buffer = new byte[32 * 1024];

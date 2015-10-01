@@ -12,7 +12,7 @@ public class TransactionTableCellRenderer extends DefaultTableCellRenderer {
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 	    Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-	    if (column == 3 && !isSelected) {
+	    if (!isSelected && column == 3) {
 	    	int status = (Integer) value;
 	    	// 2xx
 	    	if (status >= 200 && status < 300) {
