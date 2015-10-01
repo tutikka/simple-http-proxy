@@ -30,7 +30,7 @@ public class HttpRequestHead extends HttpHead {
 					head.method = st.nextToken();
 					head.uri = URLDecoder.decode(st.nextToken(), "UTF-8");
 					head.version = st.nextToken();
-					Log.i(id, "c -> p " + line);
+					Log.i(id, "Source -> Proxy " + line);
 				}
 			} else {
 				int index = line.indexOf(":");
@@ -38,7 +38,7 @@ public class HttpRequestHead extends HttpHead {
 					String name = line.substring(0, index).trim();
 					String value = line.substring(index + 1).trim();
 					head.headers.put(name, value);
-					Log.i(id, "c -> p " + name + ": " + value);
+					Log.i(id, "Source -> Proxy " + name + ": " + value);
 				}
 			}
 			lineNumber++;

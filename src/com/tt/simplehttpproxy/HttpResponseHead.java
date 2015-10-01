@@ -48,11 +48,11 @@ public class HttpResponseHead extends HttpHead {
 					if (sb.length() > 0) {
 						head.message = sb.toString();
 					}
-					Log.i(id, "s -> p " + value);
+					Log.i(id, "Destination -> Proxy " + value);
 				}
 			} else {
 				head.headers.put(name, value);
-				Log.i(id, "s -> p " + name + ": " + value);
+				Log.i(id, "Destination -> Proxy " + name + ": " + value);
 			}
 		}
 		if (head.version == null) {
@@ -62,10 +62,6 @@ public class HttpResponseHead extends HttpHead {
 			throw new Exception("did not find status");
 		}
 		return (head);
-	}
-	
-	public boolean isChunkedEncoding() {
-		return ("chunked".equalsIgnoreCase(getHeaderValue("Transfer-Encoding")));
 	}
 	
 	public int getStatus() {

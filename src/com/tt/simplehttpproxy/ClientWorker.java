@@ -66,7 +66,7 @@ public class ClientWorker implements Runnable {
 				String name = i.next();
 				String value = requestHead.getHeaders().get(name);
 				conn.setRequestProperty(name, value);
-				Log.i(id, "p -> s " + name + ": " + value);
+				Log.i(id, "Proxy -> Destination " + name + ": " + value);
 			}
 			// send content to server
 			if (conn.getDoOutput()) {
@@ -80,77 +80,61 @@ public class ClientWorker implements Runnable {
 					total += read;
 				}
 				out.flush();
+				out.close();
+				in.close();
 				end = System.currentTimeMillis();
-				Log.i(id, "c -> s " + total + " bytes in " + (end - start) + " milliseconds");
+				Log.i(id, "Source -> Destination " + total + " bytes in " + (end - start) + " milliseconds");
 			}
 			// get status from server
 			status = conn.getResponseCode();
-			Log.i(id, "got status " + status + " for destination " + requestHead.getUri());
+			Log.i(id, "got status " + status + " from destination " + requestHead.getUri());
 			// get response headers from server
 			responseHead = HttpResponseHead.parse(id, conn.getHeaderFields());
-			if (responseHead.isChunkedEncoding()) {
-				// send response headers to client
-				socket.getOutputStream().write((responseHead.getVersion() + " " + responseHead.getStatus() + " " + responseHead.getMessage() + "\r\n").getBytes("UTF-8"));
-				Set<String> responseHeaders = responseHead.getHeaders().keySet();
-				for (Iterator<String> i = responseHeaders.iterator(); i.hasNext(); ) {
-					String name = i.next();
-					String value = responseHead.getHeaders().get(name);
-					if ("Transfer-Encoding".equalsIgnoreCase(name) && "chunked".equalsIgnoreCase(value)) {
-						// handle content length below...
-					} else {
-						socket.getOutputStream().write((name + ": " + value + "\r\n").getBytes("UTF-8"));
-						Log.i(id, "p -> c " + name + ": " + value);
-					}
-				}
-				// send content to client
-				start = System.currentTimeMillis();
-				in = new BufferedInputStream(conn.getInputStream());
-				out = new BufferedOutputStream(new FileOutputStream(new File("/tmp", "cache." + id)));
-				buffer = new byte[32 * 1024];
-				total = 0;
-				while ((read = in.read(buffer)) != -1) {
-					out.write(buffer, 0, read);
-					total += read;
-				}
-				out.flush();
-				socket.getOutputStream().write(("Content-Length: " + total + "\r\n").getBytes("UTF-8"));
-				socket.getOutputStream().write("\r\n".getBytes("UTF-8"));
-				in = new BufferedInputStream(new FileInputStream(new File("/tmp", "cache." + id)));
-				out = new BufferedOutputStream(socket.getOutputStream());
-				buffer = new byte[32 * 1024];
-				total = 0;
-				while ((read = in.read(buffer)) != -1) {
-					out.write(buffer, 0, read);
-					total += read;
-				}
-				out.flush();
-				end = System.currentTimeMillis();
-				Log.i(id, "s -> c " + total + " bytes in " + (end - start) + " milliseconds");	
-			} else {
-				// send response headers to client
-				socket.getOutputStream().write((responseHead.getVersion() + " " + responseHead.getStatus() + " " + responseHead.getMessage() + "\r\n").getBytes("UTF-8"));
-				Set<String> responseHeaders = responseHead.getHeaders().keySet();
-				for (Iterator<String> i = responseHeaders.iterator(); i.hasNext(); ) {
-					String name = i.next();
-					String value = responseHead.getHeaders().get(name);
+			// send response headers to client
+			socket.getOutputStream().write((responseHead.getVersion() + " " + responseHead.getStatus() + " " + responseHead.getMessage() + "\r\n").getBytes("UTF-8"));
+			Set<String> responseHeaders = responseHead.getHeaders().keySet();
+			for (Iterator<String> i = responseHeaders.iterator(); i.hasNext(); ) {
+				String name = i.next();
+				String value = responseHead.getHeaders().get(name);
+				if ("Transfer-Encoding".equalsIgnoreCase(name) && "chunked".equalsIgnoreCase(value)) {
+					// handle content length below in this case...
+				} else {
 					socket.getOutputStream().write((name + ": " + value + "\r\n").getBytes("UTF-8"));
-					Log.i(id, "p -> c " + name + ": " + value);
+					Log.i(id, "Proxy -> Source " + name + ": " + value);
 				}
-				socket.getOutputStream().write("\r\n".getBytes("UTF-8"));
-				// send content to client
-				start = System.currentTimeMillis();
-				in = new BufferedInputStream(conn.getInputStream());
-				out = new BufferedOutputStream(socket.getOutputStream());
-				buffer = new byte[32 * 1024];
-				total = 0;
-				while ((read = in.read(buffer)) != -1) {
-					out.write(buffer, 0, read);
-					total += read;
-				}
-				out.flush();
-				end = System.currentTimeMillis();
-				Log.i(id, "s -> c " + total + " bytes in " + (end - start) + " milliseconds");	
 			}
+			// send content to client
+			start = System.currentTimeMillis();
+			File file = new File("/tmp", "cache." + id);
+			in = new BufferedInputStream(conn.getInputStream());
+			out = new BufferedOutputStream(new FileOutputStream(file));
+			buffer = new byte[32 * 1024];
+			total = 0;
+			while ((read = in.read(buffer)) != -1) {
+				out.write(buffer, 0, read);
+				total += read;
+			}
+			out.flush();
+			out.close();
+			in.close();
+			end = System.currentTimeMillis();
+			Log.i(id, "Destination -> Proxy " + total + " bytes in " + (end - start) + " milliseconds");
+			// ensure content length
+			socket.getOutputStream().write(("Content-Length: " + total + "\r\n").getBytes("UTF-8"));
+			socket.getOutputStream().write("\r\n".getBytes("UTF-8"));
+			in = new BufferedInputStream(new FileInputStream(file));
+			out = new BufferedOutputStream(socket.getOutputStream());
+			buffer = new byte[32 * 1024];
+			total = 0;
+			while ((read = in.read(buffer)) != -1) {
+				out.write(buffer, 0, read);
+				total += read;
+			}
+			out.flush();
+			out.close();
+			in.close();
+			end = System.currentTimeMillis();
+			Log.i(id, "Proxy -> Source " + total + " bytes in " + (end - start) + " milliseconds");	
 			// disconnect
 			conn.disconnect();
 			// transaction end
@@ -167,7 +151,7 @@ public class ClientWorker implements Runnable {
 			transaction.setDestination(requestHead.getUri());
 			transaction.setMethod(requestHead.getMethod());
 			transaction.setStatus(status);
-			transaction.setContentType(responseHead.getHeaderValue("content-type"));
+			transaction.setContentType(responseHead.getHeaderValue("Content-Type"));
 			transaction.setLength(total);
 			transaction.setTime(txEnd - txStart);
 			if (listeners != null) {
