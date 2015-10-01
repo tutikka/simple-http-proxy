@@ -10,7 +10,6 @@ import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.Set;
 
 public class ClientWorker implements Runnable {
@@ -32,14 +31,15 @@ public class ClientWorker implements Runnable {
 	
 	@Override
 	public void run() {
+		Transaction transaction = null;
 		HttpRequestHead requestHead = null;
 		HttpResponseHead responseHead = null;
 		HttpURLConnection conn = null;
-		long txStart = System.currentTimeMillis();
-		long txEnd = -1;
-		int status = -1;
 		long total = -1;
 		try {
+			// start transaction
+			transaction = new Transaction(id);
+			transaction.setStart(System.currentTimeMillis());
 			BufferedInputStream in = null;
 			BufferedOutputStream out = null;
 			byte[] buffer = null;
@@ -61,11 +61,11 @@ public class ClientWorker implements Runnable {
 				conn.setDoOutput(false);
 			}
 			// send request headers to server
-			Set<String> requestHeaders = requestHead.getHeaders().keySet();
-			for (Iterator<String> i = requestHeaders.iterator(); i.hasNext(); ) {
-				String name = i.next();
-				String value = requestHead.getHeaders().get(name);
+			for (Header header : requestHead.getHeaders()) {
+				String name = header.getName();
+				String value = header.getValue();
 				conn.setRequestProperty(name, value);
+				transaction.getRequestHeaders().add(header);
 				Log.i(id, "Proxy -> Destination " + name + ": " + value);
 			}
 			// send content to server
@@ -86,16 +86,17 @@ public class ClientWorker implements Runnable {
 				Log.i(id, "Source -> Destination " + total + " bytes in " + (end - start) + " milliseconds");
 			}
 			// get status from server
-			status = conn.getResponseCode();
+			int status = conn.getResponseCode();
 			Log.i(id, "got status " + status + " from destination " + requestHead.getUri());
 			// get response headers from server
 			responseHead = HttpResponseHead.parse(id, conn.getHeaderFields());
 			// send response headers to client
 			socket.getOutputStream().write((responseHead.getVersion() + " " + responseHead.getStatus() + " " + responseHead.getMessage() + "\r\n").getBytes("UTF-8"));
-			Set<String> responseHeaders = responseHead.getHeaders().keySet();
-			for (Iterator<String> i = responseHeaders.iterator(); i.hasNext(); ) {
-				String name = i.next();
-				String value = responseHead.getHeaders().get(name);
+			
+			for (Header header : responseHead.getHeaders()) {
+				String name = header.getName();
+				String value = header.getValue();
+				transaction.getResponseHeaders().add(header);
 				if ("Transfer-Encoding".equalsIgnoreCase(name) && "chunked".equalsIgnoreCase(value)) {
 					// handle content length below in this case...
 				} else {
@@ -137,23 +138,20 @@ public class ClientWorker implements Runnable {
 			Log.i(id, "Proxy -> Source " + total + " bytes in " + (end - start) + " milliseconds");	
 			// disconnect
 			conn.disconnect();
-			// transaction end
-			txEnd = System.currentTimeMillis();
 		} catch (SocketException e) {
 			Log.e(id, "socket exception when handling client connection", e);
 		} catch (Exception e) {
 			Log.e(id, "exception when handling client connection", e);
 		} finally {
-			// transaction
-			txEnd = System.currentTimeMillis();
-			Transaction transaction = new Transaction();
+			// end transaction
+			transaction.setParameters(requestHead.getParameters());
 			transaction.setSource(socket.getInetAddress().getHostAddress());
 			transaction.setDestination(requestHead.getUri());
 			transaction.setMethod(requestHead.getMethod());
-			transaction.setStatus(status);
-			transaction.setContentType(responseHead.getHeaderValue("Content-Type"));
+			transaction.setStatus(responseHead.getStatus());
+			transaction.setContentType(Utils.getHeaderValue(responseHead.getHeaders(), "Content-Type"));
 			transaction.setLength(total);
-			transaction.setTime(txEnd - txStart);
+			transaction.setEnd(System.currentTimeMillis());
 			if (listeners != null) {
 				for (TransactionListener listener : listeners) {
 					listener.onTransaction(transaction);

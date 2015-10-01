@@ -19,6 +19,14 @@ public class TransactionTableModel extends AbstractTableModel {
 		fireTableDataChanged();
 	}
 	
+	public Transaction getTransaction(int row) {
+		if (row < 0 || row > rows.size() - 1) {
+			return (null);
+		} else {
+			return (rows.get(row));
+		}
+	}
+	
 	public void clear() {
 		rows.clear();
 		fireTableDataChanged();

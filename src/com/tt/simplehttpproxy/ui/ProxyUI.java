@@ -2,11 +2,15 @@ package com.tt.simplehttpproxy.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -16,6 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
@@ -25,7 +30,7 @@ import com.tt.simplehttpproxy.Transaction;
 import com.tt.simplehttpproxy.TransactionListener;
 
 @SuppressWarnings("serial")
-public class ProxyUI extends JFrame implements ActionListener, TransactionListener {
+public class ProxyUI extends JFrame implements ActionListener, TransactionListener, MouseListener {
 
 	private static final int WIDTH = 800;
 	
@@ -41,6 +46,12 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	
 	private JLabel status;
 	
+	private JLabel summary;
+	
+	private int summaryItems = 0;
+	
+	private long summaryLength = 0;
+	
 	private ProxyUI() {
 		setTitle("Simple HTTP Proxy");
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -48,13 +59,13 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 		Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dimension.width / 2 - WIDTH / 2, dimension.height / 2 - HEIGHT / 2);
 		setLayout(new BorderLayout());
-		initMenu();
-		initTable();
-		initFooter();
+		setJMenuBar(createMenu());
+		add(createContent(), BorderLayout.CENTER);
+		add(createFooter(), BorderLayout.SOUTH);
 		setVisible(true);
 	}
 	
-	private void initMenu() {
+	private JMenuBar createMenu() {
 		JMenuBar menuBar = new JMenuBar();
 		JMenu file = new JMenu("File");
 		start = new JMenuItem("Start proxy server");
@@ -77,24 +88,30 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 		file.addSeparator();
 		file.add(exit);
 		menuBar.add(file);
-		setJMenuBar(menuBar);
+		return (menuBar);
 	}
 	
-	private void initTable() {
+	private JComponent createContent() {
 		JTable table = new JTable(tableModel);
+		table.setDefaultRenderer(Integer.class, new TransactionTableCellRenderer());
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		table.addMouseListener(this);
 		table.setAutoCreateRowSorter(true);
 		table.setFillsViewportHeight(true);
 		JScrollPane jsp = new JScrollPane(table);
-		add(jsp, BorderLayout.CENTER);
+		jsp.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		return (jsp);
 	}
 	
-	private void initFooter() {
+	private JComponent createFooter() {
 		JPanel panel = new JPanel();
-		panel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		status = new JLabel("Server: stopped");
+		panel.setLayout(new GridLayout(1, 2));
+		status = new JLabel("Server: stopped", SwingConstants.LEFT);
 		panel.add(status);
-		add(panel, BorderLayout.SOUTH);
+		summary = new JLabel("0 items | 0 bytes", SwingConstants.RIGHT);
+		panel.add(summary);
+		panel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+		return (panel);
 	}
 	
 	private void startServer() {
@@ -142,8 +159,20 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	@Override
 	public void onTransaction(Transaction transaction) {
 		tableModel.addTransaction(transaction);
+		summaryItems++;
+		summaryLength += transaction.getLength() > 0 ? transaction.getLength() : 0;
+		updateSummary();
 	}
-
+	
+	private void updateSummary() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(summaryItems);
+		sb.append(summaryItems == 1 ? " item | " : " items | ");
+		sb.append(summaryLength);
+		sb.append(summaryLength == 1 ? " byte" : " bytes");
+		summary.setText(sb.toString());
+	}
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if ("start".equals(e.getActionCommand())) {
@@ -154,11 +183,41 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 		}
 		if ("clear".equals(e.getActionCommand())) {
 			tableModel.clear();
+			summaryItems = 0;
+			summaryLength = 0;
+			updateSummary();
 		}
 		if ("exit".equals(e.getActionCommand())) {
 			stopServer();
 			dispose();
 		}
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		if (SwingUtilities.isLeftMouseButton(e)) {
+			JTable table = (JTable) e.getSource();
+			Transaction transaction = tableModel.getTransaction(table.rowAtPoint(e.getPoint()));
+			if (transaction != null && e.getClickCount() == 2) {
+				new TransactionDetailsDialog(this, transaction);
+			}
+		}
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
 	}
 	
 }

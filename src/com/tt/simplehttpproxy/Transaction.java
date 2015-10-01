@@ -1,7 +1,16 @@
 package com.tt.simplehttpproxy;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Transaction {
 
+	private String id;
+	
+	private long start;
+	
+	private long end;
+	
 	private String source;
 	
 	private String destination;
@@ -14,9 +23,45 @@ public class Transaction {
 	
 	private long length;
 	
-	private long time;
+	private List<Parameter> parameters;
 	
-	public Transaction() {
+	private List<Header> requestHeaders;
+	
+	private List<Header> responseHeaders;
+	
+	public Transaction(String id) {
+		this.id = id;
+		parameters = new ArrayList<>();
+		requestHeaders = new ArrayList<>();
+		responseHeaders = new ArrayList<>();
+	}
+
+	public long getTime() {
+		return (end - start);
+	}
+	
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public long getStart() {
+		return start;
+	}
+
+	public void setStart(long start) {
+		this.start = start;
+	}
+
+	public long getEnd() {
+		return end;
+	}
+
+	public void setEnd(long end) {
+		this.end = end;
 	}
 
 	public String getSource() {
@@ -67,12 +112,28 @@ public class Transaction {
 		this.length = length;
 	}
 
-	public long getTime() {
-		return time;
+	public List<Parameter> getParameters() {
+		return parameters;
 	}
 
-	public void setTime(long time) {
-		this.time = time;
+	public void setParameters(List<Parameter> parameters) {
+		this.parameters = parameters;
+	}
+
+	public List<Header> getRequestHeaders() {
+		return requestHeaders;
+	}
+
+	public void setRequestHeaders(List<Header> requestHeaders) {
+		this.requestHeaders = requestHeaders;
+	}
+
+	public List<Header> getResponseHeaders() {
+		return responseHeaders;
+	}
+
+	public void setResponseHeaders(List<Header> responseHeaders) {
+		this.responseHeaders = responseHeaders;
 	}
 	
 }

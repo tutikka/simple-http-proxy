@@ -1,25 +1,15 @@
 package com.tt.simplehttpproxy;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HttpHead {
 	
 	protected String version;
 	
-	protected Map<String, String> headers;
+	protected List<Header> headers = new ArrayList<>();
 	
 	public HttpHead() {
-		this.headers = new HashMap<>();
-	}
-
-	public String getHeaderValue(String name) {
-		for (String key : headers.keySet()) {
-			if (name.equalsIgnoreCase(key)) {
-				return (headers.get(key));
-			}
-		}
-		return (null);
 	}
 	
 	public String getVersion() {
@@ -30,11 +20,11 @@ public class HttpHead {
 		this.version = version;
 	}
 
-	public Map<String, String> getHeaders() {
+	public List<Header> getHeaders() {
 		return headers;
 	}
 
-	public void setHeaders(Map<String, String> headers) {
+	public void setHeaders(List<Header> headers) {
 		this.headers = headers;
 	}
 	

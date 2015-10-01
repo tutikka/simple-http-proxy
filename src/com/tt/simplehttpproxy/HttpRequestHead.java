@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 public class HttpRequestHead extends HttpHead {
@@ -12,6 +14,8 @@ public class HttpRequestHead extends HttpHead {
 	
 	private String uri;
 
+	private List<Parameter> parameters = new ArrayList<>();
+	
 	public static HttpRequestHead parse(String id, InputStream in) throws Exception {
 		if (in == null) {
 			throw new Exception("input is null");
@@ -29,6 +33,16 @@ public class HttpRequestHead extends HttpHead {
 				if (st.countTokens() == 3) {
 					head.method = st.nextToken();
 					head.uri = URLDecoder.decode(st.nextToken(), "UTF-8");
+					int index = head.uri.indexOf("?");
+					if (index != -1) {
+						StringTokenizer st2 = new StringTokenizer(head.uri.substring(index + 1), "&");
+						while (st2.hasMoreTokens()) {
+							String[] parts = st2.nextToken().split("=");
+							if (parts != null && parts.length == 2) {
+								head.parameters.add(new Parameter(parts[0], parts[1]));
+							}
+						}
+					}
 					head.version = st.nextToken();
 					Log.i(id, "Source -> Proxy " + line);
 				}
@@ -37,7 +51,7 @@ public class HttpRequestHead extends HttpHead {
 				if (index > 0) {
 					String name = line.substring(0, index).trim();
 					String value = line.substring(index + 1).trim();
-					head.headers.put(name, value);
+					head.headers.add(new Header(name, value));
 					Log.i(id, "Source -> Proxy " + name + ": " + value);
 				}
 			}
@@ -69,6 +83,14 @@ public class HttpRequestHead extends HttpHead {
 
 	public void setUri(String uri) {
 		this.uri = uri;
+	}
+
+	public List<Parameter> getParameters() {
+		return parameters;
+	}
+
+	public void setParameters(List<Parameter> parameters) {
+		this.parameters = parameters;
 	}
 	
 }

@@ -51,7 +51,7 @@ public class HttpResponseHead extends HttpHead {
 					Log.i(id, "Destination -> Proxy " + value);
 				}
 			} else {
-				head.headers.put(name, value);
+				head.headers.add(new Header(name, value));
 				Log.i(id, "Destination -> Proxy " + name + ": " + value);
 			}
 		}
