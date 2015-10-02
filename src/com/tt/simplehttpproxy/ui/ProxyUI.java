@@ -201,7 +201,8 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	public void mouseClicked(MouseEvent e) {
 		if (SwingUtilities.isLeftMouseButton(e)) {
 			JTable table = (JTable) e.getSource();
-			Transaction transaction = tableModel.getTransaction(table.rowAtPoint(e.getPoint()));
+			int row = table.convertRowIndexToModel(table.rowAtPoint(e.getPoint()));
+			Transaction transaction = tableModel.getTransaction(row);
 			if (transaction != null && e.getClickCount() == 2) {
 				new TransactionDetailsDialog(this, transaction);
 			}
