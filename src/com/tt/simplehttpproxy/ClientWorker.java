@@ -70,7 +70,7 @@ public class ClientWorker implements Runnable {
 			// send content to server
 			if (conn.getDoOutput()) {
 				start = System.currentTimeMillis();
-				File file = new File("/tmp", "cache.input." + id);
+				File file = new File(Utils.getCacheDirectory(), "input." + id);
 				in = new BufferedInputStream(socket.getInputStream());
 				out = new BufferedOutputStream(new FileOutputStream(file));
 				buffer = new byte[32 * 1024];
@@ -119,7 +119,7 @@ public class ClientWorker implements Runnable {
 			}
 			// send content to client
 			start = System.currentTimeMillis();
-			File file = new File("/tmp", "cache.output." + id);
+			File file = new File(Utils.getCacheDirectory(), "output." + id);
 			in = new BufferedInputStream(conn.getInputStream());
 			out = new BufferedOutputStream(new FileOutputStream(file));
 			buffer = new byte[32 * 1024];

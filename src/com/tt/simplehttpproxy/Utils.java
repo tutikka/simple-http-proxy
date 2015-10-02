@@ -1,5 +1,6 @@
 package com.tt.simplehttpproxy;
 
+import java.io.File;
 import java.util.List;
 
 public class Utils {
@@ -11,6 +12,14 @@ public class Utils {
 			}
 		}
 		return (null);
+	}
+	
+	public static String getCacheDirectory() {
+		File file = new File(System.getProperty("user.home"), "simple-http-proxy-cache");
+		if (!file.exists()) {
+			file.mkdirs();
+		}
+		return (file.getAbsolutePath());
 	}
 	
 }

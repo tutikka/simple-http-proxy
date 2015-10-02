@@ -110,7 +110,7 @@ public class TransactionDetailsDialog extends JDialog implements ActionListener 
 	private JComponent createInputContent() {
 		final JTextArea jta = new JTextArea();
 		jta.setEditable(false);
-		final File file = new File("/tmp", "cache.input." + transaction.getId());
+		final File file = new File(Utils.getCacheDirectory(), "input." + transaction.getId());
 		if (file.exists() && file.canRead()) {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
@@ -159,7 +159,7 @@ public class TransactionDetailsDialog extends JDialog implements ActionListener 
 	private JComponent createOutputContent() {
 		final JTextArea jta = new JTextArea();
 		jta.setEditable(false);
-		final File file = new File("/tmp", "cache.output." + transaction.getId());
+		final File file = new File(Utils.getCacheDirectory(), "output." + transaction.getId());
 		if (file.exists() && file.canRead()) {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
