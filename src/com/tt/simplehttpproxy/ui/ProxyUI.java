@@ -92,7 +92,7 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 	}
 	
 	private JComponent createContent() {
-		JTable table = new JTable(tableModel);
+		StripedTransactionTable table = new StripedTransactionTable(tableModel);
 		table.setBorder(BorderFactory.createEmptyBorder());
 		table.setDefaultRenderer(Integer.class, new TransactionTableCellRenderer());
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -199,11 +199,18 @@ public class ProxyUI extends JFrame implements ActionListener, TransactionListen
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		if (SwingUtilities.isLeftMouseButton(e)) {
+		if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
 			JTable table = (JTable) e.getSource();
-			int row = table.convertRowIndexToModel(table.rowAtPoint(e.getPoint()));
-			Transaction transaction = tableModel.getTransaction(row);
-			if (transaction != null && e.getClickCount() == 2) {
+			int tableRow = table.rowAtPoint(e.getPoint());
+			if (tableRow == -1) {
+				return;
+			}
+			int modelRow = table.convertRowIndexToModel(tableRow);
+			if (modelRow == -1) {
+				return;
+			}
+			Transaction transaction = tableModel.getTransaction(modelRow);
+			if (transaction != null) {
 				new TransactionDetailsDialog(this, transaction);
 			}
 		}
