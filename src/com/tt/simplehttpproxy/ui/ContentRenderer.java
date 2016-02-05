@@ -21,6 +21,7 @@ public abstract class ContentRenderer {
 		renderers.put("text/css", text);
 		renderers.put("text/javascript", text);
 		renderers.put("application/javascript", text);
+		renderers.put("application/json", text);
 		
 		// image
 		renderers.put("image/jpg", image);

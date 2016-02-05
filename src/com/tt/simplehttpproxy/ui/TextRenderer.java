@@ -28,6 +28,7 @@ public class TextRenderer extends ContentRenderer {
 			String line;
 			while ((line = br.readLine()) != null) {
 				content.append(line);
+				content.append("\r\n");
 			}
 		} catch (Exception e) {
 			
